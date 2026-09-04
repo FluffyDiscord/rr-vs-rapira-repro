@@ -1,0 +1,16 @@
+# Traefik static config: one plain-HTTP entrypoint, routes from the file provider below.
+# Traefik reverse-proxies over pooled keepalive upstream connections by default, and resolves
+# the backend by Docker DNS, so it drops onto app-rapira with no IP pinning.
+entryPoints:
+    web:
+        address: ":80"
+
+providers:
+    file:
+        filename: /etc/traefik/dynamic.yml
+
+api:
+    dashboard: false
+
+log:
+    level: ERROR

@@ -6,6 +6,11 @@
 # direct-throughput benchmarks (see README "Direct (no-nginx) benchmarks"):
 #   http://127.0.0.1:8080/  -> app-rr     RR http plugin (added via -o; :9000 fcgi stays)
 #   http://127.0.0.1:8000/  -> app-rapira Rapira's own HTTP server
+#
+# Two alternative front-ends proxy the SAME app-rapira:8000 upstream nginx-rapira uses, so only
+# the proxy differs (modern Go proxies vs nginx — see README "Proxy comparison"):
+#   http://127.0.0.1:8092/  -> caddy-rapira   Caddy    (Go)
+#   http://127.0.0.1:8093/  -> traefik-rapira Traefik  (Go)
 
 services:
     app-rr:
@@ -76,3 +81,26 @@ services:
             timeout: 5s
             retries: 12
             start_period: 10s
+
+    # Alternative proxies onto the same app-rapira:8000 upstream. Both pool keepalive upstream
+    # connections and DNS-resolve the backend by default — the knob nginx's bare proxy_pass lacked.
+    caddy-rapira:
+        image: caddy:2-alpine
+        depends_on:
+            app-rapira:
+                condition: service_healthy
+        volumes:
+            - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+        ports:
+            - "127.0.0.1:8092:80"
+
+    traefik-rapira:
+        image: traefik:v3.3
+        depends_on:
+            app-rapira:
+                condition: service_healthy
+        volumes:
+            - ./docker/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+            - ./docker/traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+        ports:
+            - "127.0.0.1:8093:80"

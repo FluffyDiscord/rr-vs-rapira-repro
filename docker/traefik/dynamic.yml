@@ -1,0 +1,15 @@
+# Traefik dynamic config: catch-all router onto the app-rapira HTTP upstream. passHostHeader keeps
+# the client Host; Traefik adds X-Forwarded-* automatically.
+http:
+    routers:
+        rapira:
+            rule: "PathPrefix(`/`)"
+            entryPoints:
+                - web
+            service: rapira
+    services:
+        rapira:
+            loadBalancer:
+                passHostHeader: true
+                servers:
+                    - url: "http://app-rapira:8000"
