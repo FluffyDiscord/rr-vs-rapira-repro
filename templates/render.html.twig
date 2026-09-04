@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Render benchmark</title>
+</head>
+<body>
+<table>
+    <thead>
+    <tr>
+        <th>#</th>
+        <th>Squared</th>
+        <th>Even</th>
+        <th>Label</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for row in rows %}
+        <tr class="{{ loop.index is odd ? 'odd' : 'even' }}">
+            <td>{{ row }}</td>
+            <td>{{ row * row }}</td>
+            <td>{{ row is even ? 'yes' : 'no' }}</td>
+            <td>Row number {{ loop.index }} of {{ loop.length }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</body>
+</html>

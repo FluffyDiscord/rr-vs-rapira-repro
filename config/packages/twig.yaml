@@ -1,0 +1,6 @@
+twig:
+    default_path: '%kernel.project_dir%/templates'
+
+when@prod:
+    twig:
+        strict_variables: false

@@ -1,0 +1,23 @@
+framework:
+    secret: '%env(APP_SECRET)%'
+    http_method_override: false
+    handle_all_throwables: true
+    php_errors:
+        log: true
+
+    # nginx-rapira reverse-proxies with X-Forwarded-* headers (see docker/nginx/rapira.conf),
+    # mirroring how the real prod front-ends the Rapira HTTP worker. Private Docker network ranges
+    # are trusted so Symfony honours the forwarded scheme/host. The RR FastCGI path passes these
+    # as FastCGI params instead, so this is inert there.
+    trusted_proxies: '127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16'
+    trusted_headers: [ 'x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto', 'x-forwarded-port' ]
+
+    session:
+        handler_id: null
+        cookie_secure: auto
+        cookie_samesite: lax
+
+when@prod:
+    framework:
+        router:
+            strict_requirements: null
