@@ -1,15 +1,25 @@
 # Four services, two front-ends onto the SAME app image, so wrk hits an identical app two ways:
 #   http://127.0.0.1:8081/  -> nginx-rr    -FastCGI->  app-rr    (rr serve)
 #   http://127.0.0.1:8091/  -> nginx-rapira -HTTP proxy-> app-rapira (rapira serve)
+#
+# Two extra host ports expose each server's own HTTP listener WITHOUT nginx, for
+# direct-throughput benchmarks (see README "Direct (no-nginx) benchmarks"):
+#   http://127.0.0.1:8080/  -> app-rr     RR http plugin (added via -o; :9000 fcgi stays)
+#   http://127.0.0.1:8000/  -> app-rapira Rapira's own HTTP server
 
 services:
     app-rr:
         build:
             context: .
         image: rr-vs-rapira-repro:app
-        command: ["rr", "serve", "-c", ".rr.yaml"]
+        # -o adds an HTTP listener on :8080 alongside the :9000 fcgi listener, from the
+        # byte-verbatim .rr.yaml, so nginx-rr keeps using fcgi while wrk can hit RR directly.
+        command: ["rr", "serve", "-c", ".rr.yaml", "-o", "http.address=0.0.0.0:8080"]
         expose:
             - "9000"
+            - "8080"
+        ports:
+            - "127.0.0.1:8080:8080"
         healthcheck:
             test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1', 9000) ? 0 : 1);"]
             interval: 5s
@@ -41,6 +51,9 @@ services:
         command: ["rapira", "serve", "--config", "rapira.toml"]
         expose:
             - "8000"
+        # Publish the same HTTP listener nginx-rapira proxies to, so wrk can hit Rapira directly.
+        ports:
+            - "127.0.0.1:8000:8000"
         healthcheck:
             test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1', 8000) ? 0 : 1);"]
             interval: 5s
