@@ -5,6 +5,18 @@ Serves **one identical bare Symfony app** two ways, head to head:
 - **RoadRunner** (`fluffydiscord/roadrunner-symfony-bundle`) behind nginx over **FastCGI**
 - **Rapira** (`fluffydiscord/rapira-symfony-bundle`) behind nginx over an **HTTP reverse proxy**
 
+## TL;DR
+
+- **Rapira's own HTTP server is the fastest thing here** — the runtime was never the problem.
+- **The Rapira nginx proxy was.** Committed `rapira.conf` had no upstream keepalive → one TCP
+  handshake per request → nginx burned **~730% CPU**. Fix (`upstream { keepalive }` +
+  `Connection ""` + buffers) → **~22% CPU**.
+- **nginx version doesn't matter** (1.27 ≈ 1.30 ≈ 1.31) — the `upstream{}` block does.
+- `/` req/s — Rapira: 58k direct, 14k → **20k** fixed via nginx. RoadRunner: 16.8k direct, 14k via
+  nginx (FastCGI front-end already cheap).
+- Single-host loopback numbers. On `/render`, Rapira-through-nginx trails RoadRunner (serialised
+  proxy hop, not fixable by config).
+
 ## Purpose
 
 A real Sylius app showed a latency/throughput gap between RoadRunner and Rapira. **Does it
