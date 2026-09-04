@@ -1,0 +1,47 @@
+version: "3"
+
+server:
+    command: "php public/index.php"
+    # The app tree is chown app:app and var/ is writable only by app; RoadRunner itself must
+    # start as root in order to fork workers under a different user.
+    user: app
+    env:
+        APP_RUNTIME: FluffyDiscord\RoadRunnerBundle\Runtime\Runtime
+
+http:
+    fcgi:
+        address: tcp://0.0.0.0:9000
+
+    # RoadRunner parses the body in Go, so PHP's upload_max_filesize / post_max_size become
+    # inert. These restate them; the RoadRunner default is 0 — no limit at all.
+    uploads:
+        forbid: [ ".php", ".phar", ".exe", ".bat", ".sh" ]
+
+    pool:
+        # Provisional until the sizing in docs/deployment/roadrunner-worker-mode.md §7 is run
+        # against the production host.
+        num_workers: 4
+        allocate_timeout: 60s
+        # Strictly below the `docker stop --time=120` the deploy uses, so workers finish
+        # draining before the kernel SIGKILLs the container.
+        destroy_timeout: 100s
+        supervisor:
+            exec_ttl: 60s
+
+status:
+    address: 0.0.0.0:2114
+
+metrics:
+    address: 0.0.0.0:2112
+
+rpc:
+    listen: tcp://127.0.0.1:6001
+
+logs:
+    mode: production
+    encoding: json
+    channels:
+        http:
+            level: info
+        server:
+            level: info
